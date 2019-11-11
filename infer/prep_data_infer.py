@@ -44,11 +44,14 @@ class calib_infer():
     def __init__(self, calib_dir):
         calibs = self.read_calib_file(calib_dir)
         # Tr_velo_to_cam [4, 4]
-        self.V2C = np.zeros([4, 4])
-        self.V2C[:3, :3] = np.reshape(calibs['R'], [3, 3])
-        self.V2C[:3, 3:4] = np.reshape(calibs['T'], [3, 1])
-        self.V2C[3, 3] = 1
-
+        self.V2C = np.zeros([3, 4])
+        self.V2C[:, :3] = np.reshape(calibs['R'], [3, 3])
+        self.V2C[:, 3:4] = np.reshape(calibs['T'], [3, 1])
+        self.C2V = utils.inverse_rigid_trans(self.V2C)
+        # P2
+        self.P = np.reshape(calibs['P_rect_02'], [3,4])
+        # R0
+        self.R0 = np.reshape(calibs['R_rect_00'], [3,3])
 
     def read_calib_file(self, calib_dir):
         data = {}
@@ -86,10 +89,76 @@ class calib_infer():
         pts_3d_hom = np.hstack((pts_3d, np.ones((n,1))))
         return pts_3d_hom
 
+    # ===========================
+    # ------- 3d to 3d ----------
+    # ===========================
+    def project_velo_to_ref(self, pts_3d_velo):
+        pts_3d_velo = self.cart2hom(pts_3d_velo)  # nx4
+        return np.dot(pts_3d_velo, np.transpose(self.V2C))
 
+    def project_ref_to_velo(self, pts_3d_ref):
+        pts_3d_ref = self.cart2hom(pts_3d_ref)  # nx4
+        return np.dot(pts_3d_ref, np.transpose(self.C2V))
 
+    def project_rect_to_ref(self, pts_3d_rect):
+        ''' Input and Output are nx3 points '''
+        return np.transpose(np.dot(np.linalg.inv(self.R0), np.transpose(pts_3d_rect)))
 
+    def project_ref_to_rect(self, pts_3d_ref):
+        ''' Input and Output are nx3 points '''
+        return np.transpose(np.dot(self.R0, np.transpose(pts_3d_ref)))
 
+    def project_rect_to_velo(self, pts_3d_rect):
+        ''' Input: nx3 points in rect camera coord.
+            Output: nx3 points in velodyne coord.
+        '''
+        pts_3d_ref = self.project_rect_to_ref(pts_3d_rect)
+        return self.project_ref_to_velo(pts_3d_ref)
+
+    def project_velo_to_rect(self, pts_3d_velo):
+        pts_3d_ref = self.project_velo_to_ref(pts_3d_velo)
+        return self.project_ref_to_rect(pts_3d_ref)
+
+    # ===========================
+    # ------- 3d to 2d ----------
+    # ===========================
+    def project_rect_to_image(self, pts_3d_rect):
+        ''' Input: nx3 points in rect camera coord.
+            Output: nx2 points in image2 coord.
+        '''
+        pts_3d_rect = self.cart2hom(pts_3d_rect)
+        pts_2d = np.dot(pts_3d_rect, np.transpose(self.P))  # nx3
+        pts_2d[:, 0] /= pts_2d[:, 2]
+        pts_2d[:, 1] /= pts_2d[:, 2]
+        return pts_2d[:, 0:2]
+
+    def project_velo_to_image(self, pts_3d_velo):
+        ''' Input: nx3 points in velodyne coord.
+            Output: nx2 points in image2 coord.
+        '''
+        pts_3d_rect = self.project_velo_to_rect(pts_3d_velo)
+        return self.project_rect_to_image(pts_3d_rect)
+
+    # ===========================
+    # ------- 2d to 3d ----------
+    # ===========================
+    def project_image_to_rect(self, uv_depth):
+        ''' Input: nx3 first two channels are uv, 3rd channel
+                   is depth in rect camera coord.
+            Output: nx3 points in rect camera coord.
+        '''
+        n = uv_depth.shape[0]
+        x = ((uv_depth[:, 0] - self.c_u) * uv_depth[:, 2]) / self.f_u + self.b_x
+        y = ((uv_depth[:, 1] - self.c_v) * uv_depth[:, 2]) / self.f_v + self.b_y
+        pts_3d_rect = np.zeros((n, 3))
+        pts_3d_rect[:, 0] = x
+        pts_3d_rect[:, 1] = y
+        pts_3d_rect[:, 2] = uv_depth[:, 2]
+        return pts_3d_rect
+
+    def project_image_to_velo(self, uv_depth):
+        pts_3d_rect = self.project_image_to_rect(uv_depth)
+        return self.project_rect_to_velo(pts_3d_rect)
 
 
 class kitti_object_infer():
@@ -124,16 +193,57 @@ class kitti_object_infer():
     def get_calibration(self):
         return calib_infer(self.calib_dir)
 
+def get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax,
+                           return_more=False, clip_distance=2.0):
+    ''' Filter lidar points, keep those in image FOV '''
+    pts_2d = calib.project_velo_to_image(pc_velo)
+    fov_inds = (pts_2d[:, 0] < xmax) & (pts_2d[:, 0] >= xmin) & \
+        (pts_2d[:, 1] < ymax) & (pts_2d[:, 1] >= ymin)
+    fov_inds = fov_inds & (pc_velo[:, 0] > clip_distance)
+    imgfov_pc_velo = pc_velo[fov_inds, :]
+    if return_more:
+        return imgfov_pc_velo, pts_2d, fov_inds
+    else:
+        return imgfov_pc_velo  # [m, 4]
 
-'''
+def show_lidar_with_boxes(pc_velo, objects, calib,
+                          img_fov=False, img_width=None, img_height=None):
+    ''' Show all LiDAR points.
+        Draw 3d box in LiDAR point cloud (in velo coord system) '''
+    if 'mlab' not in sys.modules: import mayavi.mlab as mlab
+    from mayavi.viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
+
+    print(('All point num: ', pc_velo.shape[0]))
+    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
+        fgcolor=None, engine=None, size=(1000, 500))
+    if img_fov:
+        pc_velo = get_lidar_in_image_fov(pc_velo, calib, 0, 0,
+            img_width, img_height)
+        print(('FOV point num: ', pc_velo.shape[0]))
+    draw_lidar(pc_velo, fig=fig)
+
+    for obj in objects:
+        if obj.type=='DontCare':continue
+        # Draw 3d bounding box
+        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib.P)
+        box3d_pts_3d_velo = calib.project_rect_to_velo(box3d_pts_3d)
+        # Draw heading arrow
+        ori3d_pts_2d, ori3d_pts_3d = utils.compute_orientation_3d(obj, calib.P)
+        ori3d_pts_3d_velo = calib.project_rect_to_velo(ori3d_pts_3d)
+        x1,y1,z1 = ori3d_pts_3d_velo[0,:]
+        x2,y2,z2 = ori3d_pts_3d_velo[1,:]
+        draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
+        mlab.plot3d([x1, x2], [y1, y2], [z1,z2], color=(0.5,0.5,0.5),
+            tube_radius=None, line_width=1, figure=fig)
+    mlab.show(1)
+
+
 def demo():
-    raw_input
-'''
+    dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
+    calibs = calib_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync\\2011_09_26_calib\\2011_09_26')
+    pc_velo = dataset.get_lidar(0)[:, 0:3]
+
 
 if __name__ == '__main__':
     print('start')
-    data = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
-    #img = data.get_image(0)
-    #cv2.imshow('prep', img)
-    #cv2.waitKey(0)
-    calibs = calib_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync\\2011_09_26_calib\\2011_09_26')
+    demo()
