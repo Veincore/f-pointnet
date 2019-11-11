@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" serverName="vdc@192.168.1.100:22">
+    <serverData>
+      <paths name="vdc@192.168.1.100:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/vdc/Desktop/Chris/frustum-pointnets" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
