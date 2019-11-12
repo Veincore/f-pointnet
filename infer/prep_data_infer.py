@@ -1,14 +1,18 @@
 import os
 import sys
 
-import mayavi as mlab
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # '../frustum-pointnets/infer'
 ROOT_DIR = os.path.dirname(BASE_DIR)  # '../frustum-pointnets'
 sys.path.append(ROOT_DIR)
+sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
+
+if(os.path.exists('/opt/ros/kinetic/lib/python2.7/dist-packages/')):
+    sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
 import cv2
 import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
 import kitti.kitti_util as utils
 
 #raw_input = input()
@@ -166,28 +170,27 @@ class kitti_object_infer():
         self.root_dir = root_dir
         self.num_samples = 108
 
-        #self.image_dir = os.path.join(self.root_dir, 'image_02/data')
-        #self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points/data')
-        #self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib/2011_09_26')
-        self.image_dir = os.path.join(self.root_dir, 'image_02\\data')
-        self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib\\2011_09_26')
-        self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points\\data')
-
+        self.image_dir = os.path.join(self.root_dir, 'image_02/data')
+        self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points/data')
+        self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib/2011_09_26')
+        #self.image_dir = os.path.join(self.root_dir, 'image_02\\data')
+        #self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib\\2011_09_26')
+        #self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points\\data')
 
     def __len__(self):
         return self.num_samples
 
     def get_image(self, idx):
         assert(idx < self.num_samples)
-        #img_filename = os.path.join(self.image_dir, '%10d.png'%(idx))
-        img_filename = os.path.join(self.image_dir, '0000000000.png')
+        img_filename = os.path.join(self.image_dir, '%010d.png'%(idx))
+        #img_filename = os.path.join(self.image_dir, '0000000000.png')
         print('filename: ', img_filename)
         return utils.load_image(img_filename)
 
     def get_lidar(self, idx):
         assert(idx < self.num_samples)
-        #lidar_filename = os.path.join(self.lidar_dir, '%06d.bin'%(idx))
-        lidar_filename = os.path.join(self.lidar_dir, '0000000000.bin')
+        lidar_filename = os.path.join(self.lidar_dir, '%010d.bin'%(idx))
+        #lidar_filename = os.path.join(self.lidar_dir, '0000000000.bin')
         return utils.load_velo_scan(lidar_filename)
 
     def get_calibration(self):
@@ -206,43 +209,58 @@ def get_lidar_in_image_fov(pc_velo, calib, xmin, ymin, xmax, ymax,
     else:
         return imgfov_pc_velo  # [m, 4]
 
-def show_lidar_with_boxes(pc_velo, objects, calib,
-                          img_fov=False, img_width=None, img_height=None):
+def show_lidar(pc_velo, calib, fig, img_fov=False, img_width=None, img_height=None):
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
-    from mayavi.viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
+    from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
 
+    mlab.clf(fig)
     print(('All point num: ', pc_velo.shape[0]))
-    fig = mlab.figure(figure=None, bgcolor=(0,0,0),
-        fgcolor=None, engine=None, size=(1000, 500))
+    #fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1000, 500))
     if img_fov:
         pc_velo = get_lidar_in_image_fov(pc_velo, calib, 0, 0,
             img_width, img_height)
         print(('FOV point num: ', pc_velo.shape[0]))
     draw_lidar(pc_velo, fig=fig)
-
-    for obj in objects:
-        if obj.type=='DontCare':continue
-        # Draw 3d bounding box
-        box3d_pts_2d, box3d_pts_3d = utils.compute_box_3d(obj, calib.P)
-        box3d_pts_3d_velo = calib.project_rect_to_velo(box3d_pts_3d)
-        # Draw heading arrow
-        ori3d_pts_2d, ori3d_pts_3d = utils.compute_orientation_3d(obj, calib.P)
-        ori3d_pts_3d_velo = calib.project_rect_to_velo(ori3d_pts_3d)
-        x1,y1,z1 = ori3d_pts_3d_velo[0,:]
-        x2,y2,z2 = ori3d_pts_3d_velo[1,:]
-        draw_gt_boxes3d([box3d_pts_3d_velo], fig=fig)
-        mlab.plot3d([x1, x2], [y1, y2], [z1,z2], color=(0.5,0.5,0.5),
-            tube_radius=None, line_width=1, figure=fig)
     mlab.show(1)
 
+def show_lidar_on_image(pc_velo, img, calib, img_width, img_height):
+    ''' Project LiDAR points to image '''
+    imgfov_pc_velo, pts_2d, fov_inds = get_lidar_in_image_fov(pc_velo,
+        calib, 0, 0, img_width, img_height, True)
+    imgfov_pts_2d = pts_2d[fov_inds,:]
+    imgfov_pc_rect = calib.project_velo_to_rect(imgfov_pc_velo)
+
+    cmap = plt.cm.get_cmap('hsv', 256)
+    cmap = np.array([cmap(i) for i in range(256)])[:,:3]*255
+
+    for i in range(imgfov_pts_2d.shape[0]):
+        depth = imgfov_pc_rect[i,2]
+        color = cmap[int(640.0/depth),:]
+        cv2.circle(img, (int(np.round(imgfov_pts_2d[i,0])),
+            int(np.round(imgfov_pts_2d[i,1]))),
+            2, color=tuple(color), thickness=-1)
+    #Image.fromarray(img).show()
+    cv2.imshow('0', img)
+    return img
 
 def demo():
-    dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
-    calibs = calib_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync\\2011_09_26_calib\\2011_09_26')
-    pc_velo = dataset.get_lidar(0)[:, 0:3]
+    if 'mlab' not in sys.modules: import mayavi.mlab as mlab
 
+    dataset = kitti_object_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync')
+    calibs = calib_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync/2011_09_26_calib/2011_09_26')
+    #dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
+    #calibs = calib_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync\\2011_09_26_calib\\2011_09_26')
+    fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
+    for i in range(len(dataset)):
+        img = dataset.get_image(i)
+        print('img: ', img.shape)
+        pc = dataset.get_lidar(i)[:, 0:3]
+        #cv2.imshow('0', img)
+        show_lidar(pc, calibs, fig, img_fov = False, img_width = img.shape[1], img_height = img.shape[0])
+        show_lidar_on_image(pc, img, calibs, img_width=img.shape[1], img_height=img.shape[0])
+        cv2.waitKey(1)
 
 if __name__ == '__main__':
     print('start')

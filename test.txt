@@ -1,29 +1,3 @@
-calib: y_image2 = P^2_rect * R0_rect * Tr_velo_to_cam * x_velo
-
-
-inference:
-raw_data --> kitti_object
-
-inference(sess, ops, pc, one_hot_vec, batch_size)
-ops:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     # Add NVIDIA package repositories
     # Add HTTPS support for apt-key
     sudo apt-get install gnupg-curl

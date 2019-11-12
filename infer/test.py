@@ -1,15 +1,3 @@
-import os
-import sys
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-if __name__ == '__main__':
-    print('ok', BASE_DIR)
-
-
-
-'''
 from gluoncv import model_zoo, data, utils
 from matplotlib import pyplot as plt
 import time
@@ -30,4 +18,3 @@ print('time: ', time2 - time1)
 ax = utils.viz.plot_bbox(img, bounding_boxs[0], scores[0],
                          class_IDs[0], class_names=net.classes)
 plt.show()
-'''
