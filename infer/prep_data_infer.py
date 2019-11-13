@@ -11,8 +11,10 @@ if(os.path.exists('/opt/ros/kinetic/lib/python2.7/dist-packages/')):
 
 import cv2
 import numpy as np
+import mxnet as mx
 from PIL import Image
 import matplotlib.pyplot as plt
+import gluoncv
 import kitti.kitti_util as utils
 
 #raw_input = input()
@@ -170,12 +172,12 @@ class kitti_object_infer():
         self.root_dir = root_dir
         self.num_samples = 108
 
-        self.image_dir = os.path.join(self.root_dir, 'image_02/data')
-        self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points/data')
-        self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib/2011_09_26')
-        #self.image_dir = os.path.join(self.root_dir, 'image_02\\data')
-        #self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib\\2011_09_26')
-        #self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points\\data')
+        #self.image_dir = os.path.join(self.root_dir, 'image_02/data')
+        #self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points/data')
+        #self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib/2011_09_26')
+        self.image_dir = os.path.join(self.root_dir, 'image_02\\data')
+        self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib\\2011_09_26')
+        self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points\\data')
 
     def __len__(self):
         return self.num_samples
@@ -185,7 +187,7 @@ class kitti_object_infer():
         img_filename = os.path.join(self.image_dir, '%010d.png'%(idx))
         #img_filename = os.path.join(self.image_dir, '0000000000.png')
         print('filename: ', img_filename)
-        return utils.load_image(img_filename)
+        return utils.load_image(img_filename), img_filename
 
     def get_lidar(self, idx):
         assert(idx < self.num_samples)
@@ -215,7 +217,7 @@ def show_lidar(pc_velo, calib, fig, img_fov=False, img_width=None, img_height=No
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
     from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
 
-    mlab.clf(fig)
+    #mlab.clf(fig)
     print(('All point num: ', pc_velo.shape[0]))
     #fig = mlab.figure(figure=None, bgcolor=(0,0,0), fgcolor=None, engine=None, size=(1000, 500))
     if img_fov:
@@ -245,22 +247,47 @@ def show_lidar_on_image(pc_velo, img, calib, img_width, img_height):
     cv2.imshow('0', img)
     return img
 
-def demo():
-    if 'mlab' not in sys.modules: import mayavi.mlab as mlab
+def get_2d_box_yolo(img, net):
+    '''
+    :param img: ndarray, BGR
+            net: gluoncv model_zoo
 
-    dataset = kitti_object_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync')
-    calibs = calib_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync/2011_09_26_calib/2011_09_26')
-    #dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
-    #calibs = calib_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync\\2011_09_26_calib\\2011_09_26')
-    fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
+    :return:  DNArray (mxnet)
+            class_IDs: [batch, 100, 1]
+                   0        1      2    3     4     5   6   7   8     9      10
+                aeroplane bicycle bird boat bottle bus car cat chair cow diningtable
+                11   12      13       14       15       16    17   18      19
+                dog horse motorbike person pottedplant sheep sofa train tvmonitor
+
+            scores: [batch, 100, 1]
+            bounding_boxes: [batch, 100, 4]
+    '''
+    #net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
+    img = mx.nd.array(img[:, :, ::-1])
+    x, img = gluoncv.data.transforms.presets.yolo.transform_test(img, short = 512)
+    class_IDs, scores, bounding_boxs = net(x)
+    ax = gluoncv.utils.viz.plot_bbox(img, bounding_boxs[0], scores[0],
+                             class_IDs[0], class_names=net.classes)
+    plt.show()
+    return class_IDs, scores, bounding_boxs
+
+def demo():
+    #if 'mlab' not in sys.modules: import mayavi.mlab as mlab
+    #dataset = kitti_object_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync')
+    #calibs = calib_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync/2011_09_26_calib/2011_09_26')
+    dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
+    calibs = calib_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync\\2011_09_26_calib\\2011_09_26')
+    net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
+    #fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
     for i in range(len(dataset)):
-        img = dataset.get_image(i)
+        img, _ = dataset.get_image(i)
         print('img: ', img.shape)
         pc = dataset.get_lidar(i)[:, 0:3]
         #cv2.imshow('0', img)
-        show_lidar(pc, calibs, fig, img_fov = False, img_width = img.shape[1], img_height = img.shape[0])
-        show_lidar_on_image(pc, img, calibs, img_width=img.shape[1], img_height=img.shape[0])
-        cv2.waitKey(1)
+        #show_lidar(pc, calibs, fig, img_fov = False, img_width = img.shape[1], img_height = img.shape[0])
+        #show_lidar_on_image(pc, img, calibs, img_width=img.shape[1], img_height=img.shape[0])
+        #cv2.waitKey(1)
+        get_2d_box_yolo(img, net)
 
 if __name__ == '__main__':
     print('start')
