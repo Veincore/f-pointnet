@@ -96,6 +96,11 @@ class FrustumDataset(object):
     ''' Dataset class for Frustum PointNets training/evaluation.
     Load prepared KITTI data from pickled files, return individual data element
     [optional] along with its annotations.
+
+    eg:
+        TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
+            rotate_to_center=True, overwritten_data_path=FLAGS.data_path,
+            from_rgb_detection=FLAGS.from_rgb_detection, one_hot=True)
     '''
     def __init__(self, npoints, split,
                  random_flip=False, random_shift=False, rotate_to_center=False,
@@ -176,6 +181,7 @@ class FrustumDataset(object):
                 return point_set, rot_angle, self.prob_list[index], one_hot_vec
             else:
                 return point_set, rot_angle, self.prob_list[index]
+
         
         # ------------------------------ LABELS ----------------------------
         seg = self.label_list[index] 

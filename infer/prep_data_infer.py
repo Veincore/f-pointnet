@@ -58,6 +58,13 @@ class calib_infer():
         self.P = np.reshape(calibs['P_rect_02'], [3,4])
         # R0
         self.R0 = np.reshape(calibs['R_rect_00'], [3,3])
+        # Camera intrinsics and extrinsics
+        self.c_u = self.P[0, 2]
+        self.c_v = self.P[1, 2]
+        self.f_u = self.P[0, 0]
+        self.f_v = self.P[1, 1]
+        self.b_x = self.P[0, 3] / (-self.f_u)  # relative
+        self.b_y = self.P[1, 3] / (-self.f_v)
 
     def read_calib_file(self, calib_dir):
         data = {}
@@ -252,42 +259,185 @@ def get_2d_box_yolo(img, net):
     :param img: ndarray, BGR
             net: gluoncv model_zoo
 
-    :return:  DNArray (mxnet)
-            class_IDs: [batch, 100, 1]
+    :return:  NDArray (mxnet)
+            class_IDs: [batch, 100, 1], 使用时仅用{'Car_6': 0, 'Pedestrian_14': 1, 'Cyclist_1': 2}
                    0        1      2    3     4     5   6   7   8     9      10
                 aeroplane bicycle bird boat bottle bus car cat chair cow diningtable
                 11   12      13       14       15       16    17   18      19
                 dog horse motorbike person pottedplant sheep sofa train tvmonitor
 
             scores: [batch, 100, 1]
-            bounding_boxes: [batch, 100, 4]
+            bounding_boxes: [batch, 100, 4], [xmin, ymin, xmax, ymax]
     '''
     #net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
     img = mx.nd.array(img[:, :, ::-1])
     x, img = gluoncv.data.transforms.presets.yolo.transform_test(img, short = 512)
     class_IDs, scores, bounding_boxs = net(x)
+    '''
     ax = gluoncv.utils.viz.plot_bbox(img, bounding_boxs[0], scores[0],
                              class_IDs[0], class_names=net.classes)
     plt.show()
+    '''
+    class_IDs, scores, bounding_boxs = class_IDs.asnumpy(), scores.asnumpy(), bounding_boxs.asnumpy()
+    class_id_index = np.where(class_IDs > -1)
+    class_IDs = class_IDs[class_id_index]
+    scores = scores[class_id_index]
+    bounding_boxs = bounding_boxs[:, :len(class_IDs), :].squeeze(0)
+
     return class_IDs, scores, bounding_boxs
+
+def extract_data(dataset, net):
+    type_whitelist = [6, 14, 1] # 6:car 14: person 1:bicycle
+    box2d_list = [] # [xmin,ymin,xmax,ymax]
+    type_list = []
+    prob_list = []
+    input_list = []  # channel number = 4, xyz,intensity in rect camera coord
+    frustum_angle_list = []
+
+    data_idx = 0
+    img, _ = dataset.get_image(data_idx)
+    calib = dataset.get_calibration()
+    pc_velo = dataset.get_lidar(data_idx)
+    pc_rect = np.zeros_like(pc_velo)
+    pc_rect[:, 0:3] = calib.project_velo_to_rect(pc_velo[:, 0:3])
+
+    pc_rect[:, 3] = pc_velo[:, 3]
+    img_height, img_width, img_channel = img.shape
+    det_type_list, det_prob_list, det_box2d_list = get_2d_box_yolo(img, net)
+    _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov( \
+        pc_velo[:, 0:3], calib, 0, 0, img_width, img_height, True)
+
+    for obj_idx in range(len(det_type_list)):
+        if det_type_list[obj_idx] not in type_whitelist : continue
+
+        box2d = det_box2d_list[obj_idx]
+        xmin, ymin, xmax, ymax = box2d
+        box_fov_inds = (pc_image_coord[:, 0] < xmax) & \
+                       (pc_image_coord[:, 0] >= xmin) & \
+                       (pc_image_coord[:, 1] < ymax) & \
+                       (pc_image_coord[:, 1] >= ymin)
+        box_fov_inds = box_fov_inds & img_fov_inds
+        pc_in_box_fov = pc_rect[box_fov_inds, :]
+        # get frustum angle
+        box2d_center = np.array([(xmin + xmax) / 2.0, (ymin + ymax) / 2.0])
+        uvdepth = np.zeros((1, 3))
+        uvdepth[0, 0:2] = box2d_center
+        uvdepth[0, 2] = 20  # some random depth
+        box2d_center_rect = calib.project_image_to_rect(uvdepth)
+        frustum_angle = -1 * np.arctan2(box2d_center_rect[0, 2],
+                                        box2d_center_rect[0, 0])
+        box2d_list.append(np.array([xmin,ymin,xmax,ymax]))
+        input_list.append(pc_in_box_fov)
+        type_list.append(det_type_list[obj_idx])
+        prob_list.append(det_prob_list[obj_idx])
+        frustum_angle_list.append(frustum_angle)
+
+    data = {}
+    data['box2d'] = box2d_list
+    data['pc_in_box'] = input_list
+    data['type'] = type_list
+    data['prob'] = prob_list
+    data['frustum_angle'] = frustum_angle_list
+    return data
+
+def rotate_pc_along_y(pc, rot_angle):
+    '''
+    Input:
+        pc: numpy array (N,C), first 3 channels are XYZ
+            z is facing forward, x is left ward, y is downward
+        rot_angle: rad scalar
+    Output:
+        pc: updated pc with XYZ rotated
+    '''
+    cosval = np.cos(rot_angle)
+    sinval = np.sin(rot_angle)
+    rotmat = np.array([[cosval, -sinval],[sinval, cosval]])
+    pc[:,[0,2]] = np.dot(pc[:,[0,2]], np.transpose(rotmat))
+    return pc
+
+class frustum_data_infer():
+    def __init__(self, data, npoints, random_flip = False, random_shift = False,
+                 rotate_to_center = False, one_hot = False):
+        self.npoints = npoints
+        self.random_flip = random_flip
+        self.random_shift = random_shift
+        self.rotate_to_center = rotate_to_center
+        self.one_hot = one_hot
+
+        self.box2d_list = data['box2d']
+        self.input_list = data['pc_in_box']
+        self.type_list = data['type']
+        self.frustum_angle_list = data['frustum_angle']
+        self.prob_list = data['prob']
+
+    def __len__(self):
+        return len(self.input_list)
+
+    def __getitem__(self, index):
+        rot_angle = self.get_center_view_rot_angle(index)
+        # Compute one hot vector
+        type2onehotclass = {'6': 0, '14': 1, '1': 2}
+        if self.one_hot:
+            cls_type = str(self.type_list[index])
+            assert (cls_type in ['6', '14', '1'])
+            one_hot_vec = np.zeros((3))
+            one_hot_vec[type2onehotclass[cls_type]] = 1
+
+        # Get point cloud
+        if self.rotate_to_center:
+            point_set = self.get_center_view_point_set(index)
+        else:
+            point_set = self.input_list[index]
+
+            # Resample
+        choice = np.random.choice(point_set.shape[0], self.npoints, replace=True)
+        point_set = point_set[choice, :]
+
+        if self.one_hot:
+            return point_set, rot_angle, self.prob_list[index], one_hot_vec
+        else:
+            return point_set, rot_angle, self.prob_list[index]
+
+    def get_center_view_rot_angle(self, index):
+        ''' Get the frustum rotation angle, it isshifted by pi/2 so that it
+        can be directly used to adjust GT heading angle '''
+        return np.pi/2.0 + self.frustum_angle_list[index]
+
+    def get_center_view_point_set(self, index):
+        ''' Frustum rotation of point clouds.
+        NxC points with first 3 channels as XYZ
+        z is facing forward, x is left ward, y is downward
+        '''
+        # Use np.copy to avoid corrupting original data
+        point_set = np.copy(self.input_list[index])
+        return rotate_pc_along_y(point_set, \
+            self.get_center_view_rot_angle(index))
+
+
+
+
 
 def demo():
     #if 'mlab' not in sys.modules: import mayavi.mlab as mlab
     #dataset = kitti_object_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync')
     #calibs = calib_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync/2011_09_26_calib/2011_09_26')
     dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
-    calibs = calib_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync\\2011_09_26_calib\\2011_09_26')
     net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
     #fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
-    for i in range(len(dataset)):
+    for i in range(2) :    #range(len(dataset)):
+        data = extract_data(dataset, net)
+        '''
         img, _ = dataset.get_image(i)
         print('img: ', img.shape)
         pc = dataset.get_lidar(i)[:, 0:3]
-        #cv2.imshow('0', img)
+        cv2.imshow('0', img)
         #show_lidar(pc, calibs, fig, img_fov = False, img_width = img.shape[1], img_height = img.shape[0])
         #show_lidar_on_image(pc, img, calibs, img_width=img.shape[1], img_height=img.shape[0])
         #cv2.waitKey(1)
-        get_2d_box_yolo(img, net)
+        class_IDs, scores, bounding_boxs = get_2d_box_yolo(img, net)
+        print('shape: ', class_IDs.shape, scores.shape, bounding_boxs.shape)
+        '''
+        print(data)
 
 if __name__ == '__main__':
     print('start')
