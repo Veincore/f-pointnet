@@ -32,6 +32,12 @@ class_IDs = class_IDs[class_id_index]
 scores = scores[class_id_index]
 bounding_boxs = bounding_boxs[:, :len(class_IDs), :].squeeze(0)
 
+class_id_index = [i for i, e in enumerate(class_IDs) if e in [6, 14, 1]]
+class_IDs = class_IDs[class_id_index]
+scores = scores[class_id_index]
+bounding_boxs = bounding_boxs[class_id_index, :]
+
+
 print('class_id: ',     class_IDs)  # NDArray [batch, 100, 1]
 print('scores: ', scores)  # [batch, 100, 1]
 print('box: ', bounding_boxs)  # [batch, 100, 4]

@@ -9,6 +9,7 @@ from __future__ import print_function
 
 import os
 import sys
+import math
 import argparse
 import importlib
 import numpy as np
@@ -45,9 +46,11 @@ NUM_CLASSES = 2
 NUM_CHANNEL = 4
 
 # Load Frustum Datasets.
+'''
 TEST_DATASET = provider.FrustumDataset(npoints=NUM_POINT, split='val',
     rotate_to_center=True, overwritten_data_path=FLAGS.data_path,
     from_rgb_detection=FLAGS.from_rgb_detection, one_hot=True)
+'''
 
 def get_session_and_ops(batch_size, num_point):
     ''' Define model graph, load model parameters,
@@ -100,7 +103,7 @@ def softmax(x):
 def inference(sess, ops, pc, one_hot_vec, batch_size):
     ''' Run inference for frustum pointnets in batch mode '''
     assert pc.shape[0]%batch_size == 0
-    num_batches = pc.shape[0]/batch_size
+    num_batches = math.floor(pc.shape[0]/batch_size)
     logits = np.zeros((pc.shape[0], pc.shape[1], NUM_CLASSES))
     centers = np.zeros((pc.shape[0], 3))
     heading_logits = np.zeros((pc.shape[0], NUM_HEADING_BIN))
@@ -161,7 +164,8 @@ def write_detection_results(result_dir, id_list, type_list, box2d_list, center_l
     results = {} # map from idx to list of strings, each string is a line (without \n)
     for i in range(len(center_list)):
         idx = id_list[i]
-        output_str = type_list[i] + " -1 -1 -10 "
+        # output_str = type_list[i] + " -1 -1 -10 "
+        output_str = str(type_list[i]) + " -1 -1 -10 "
         box2d = box2d_list[i]
         output_str += "%f %f %f %f " % (box2d[0],box2d[1],box2d[2],box2d[3])
         h,w,l,tx,ty,tz,ry = provider.from_prediction_to_label_format(center_list[i],
@@ -191,7 +195,8 @@ def fill_files(output_dir, to_fill_filename_list):
             fout = open(filepath, 'w')
             fout.close()
 
-def test_from_rgb_detection(output_filename, result_dir=None):
+#def test_from_rgb_detection(output_filename, result_dir=None):
+def test_from_rgb_detection(TEST_DATASET, output_filename, result_dir=None):
     ''' Test frustum pointents with 2D boxes from a RGB detector.
     Write test results to KITTI format label files.
     todo (rqi): support variable number of points.
@@ -228,7 +233,7 @@ def test_from_rgb_detection(output_filename, result_dir=None):
         batch_one_hot_to_feed[0:cur_batch_size,:] = batch_one_hot_vec
 
         # Run one batch inference
-	batch_output, batch_center_pred, \
+        batch_output, batch_center_pred, \
         batch_hclass_pred, batch_hres_pred, \
         batch_sclass_pred, batch_sres_pred, batch_scores = \
             inference(sess, ops, batch_data_to_feed,
@@ -274,7 +279,8 @@ def test_from_rgb_detection(output_filename, result_dir=None):
             for line in open(FLAGS.idx_path)]
         fill_files(output_dir, to_fill_filename_list)
 
-def test(output_filename, result_dir=None):
+#def test(output_filename, result_dir=None):
+def test(TEST_DATASET, output_filename, result_dir=None):
     ''' Test frustum pointnets with GT 2D boxes.
     Write test results to KITTI format label files.
     todo (rqi): support variable number of points.
@@ -307,7 +313,7 @@ def test(output_filename, result_dir=None):
             get_batch(TEST_DATASET, test_idxs, start_idx, end_idx,
                 NUM_POINT, NUM_CHANNEL)
 
-	batch_output, batch_center_pred, \
+        batch_output, batch_center_pred, \
         batch_hclass_pred, batch_hres_pred, \
         batch_sclass_pred, batch_sres_pred, batch_scores = \
             inference(sess, ops, batch_data,

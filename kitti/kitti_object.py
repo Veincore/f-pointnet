@@ -64,7 +64,7 @@ class kitti_object(object):
     def get_label_objects(self, idx):
         assert(idx<self.num_samples and self.split=='training') 
         label_filename = os.path.join(self.label_dir, '%06d.txt'%(idx))
-        return utils.read_label(label_filename)  # 多个object
+        return utils.read_label(label_filename)
         
     def get_depth_map(self, idx):
         pass

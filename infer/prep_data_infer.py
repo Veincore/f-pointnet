@@ -5,17 +5,42 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # '../frustum-pointnets/in
 ROOT_DIR = os.path.dirname(BASE_DIR)  # '../frustum-pointnets'
 sys.path.append(ROOT_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
+#sys.path.append(os.path.join(ROOT_DIR, 'train'))
 
 if(os.path.exists('/opt/ros/kinetic/lib/python2.7/dist-packages/')):
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
+import argparse
 import cv2
 import numpy as np
 import mxnet as mx
-from PIL import Image
+import importlib
 import matplotlib.pyplot as plt
 import gluoncv
 import kitti.kitti_util as utils
+from train.test import test_from_rgb_detection
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
+parser.add_argument('--num_point', type=int, default=1024, help='Point Number [default: 1024]')
+parser.add_argument('--model', default='frustum_pointnets_v1', help='Model name [default: frustum_pointnets_v1]')
+parser.add_argument('--model_path', default='log/model.ckpt', help='model checkpoint file path [default: log/model.ckpt]')
+parser.add_argument('--batch_size', type=int, default=32, help='batch size for inference [default: 32]')
+parser.add_argument('--output', default='test_results', help='output file/folder name [default: test_results]')
+parser.add_argument('--data_path', default=None, help='frustum dataset pickle filepath [default: None]')
+parser.add_argument('--from_rgb_detection', action='store_true', help='test from dataset files from rgb detection.')
+parser.add_argument('--idx_path', default=None, help='filename of txt where each line is a data idx, used for rgb detection -- write <id>.txt for all frames. [default: None]')
+parser.add_argument('--dump_result', action='store_true', help='If true, also dump results to .pickle file')
+FLAGS = parser.parse_args()
+
+# Set training configurations
+BATCH_SIZE = FLAGS.batch_size
+MODEL_PATH = FLAGS.model_path
+GPU_INDEX = FLAGS.gpu
+NUM_POINT = FLAGS.num_point  # 1024
+MODEL = importlib.import_module(FLAGS.model)
+NUM_CLASSES = 2
+NUM_CHANNEL = 4
 
 #raw_input = input()
 
@@ -179,12 +204,12 @@ class kitti_object_infer():
         self.root_dir = root_dir
         self.num_samples = 108
 
-        #self.image_dir = os.path.join(self.root_dir, 'image_02/data')
-        #self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points/data')
-        #self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib/2011_09_26')
-        self.image_dir = os.path.join(self.root_dir, 'image_02\\data')
-        self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib\\2011_09_26')
-        self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points\\data')
+        self.image_dir = os.path.join(self.root_dir, 'image_02/data')
+        self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points/data')
+        self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib/2011_09_26')
+        # self.image_dir = os.path.join(self.root_dir, 'image_02\\data')
+        # self.calib_dir = os.path.join(self.root_dir, '2011_09_26_calib\\2011_09_26')
+        # self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points\\data')
 
     def __len__(self):
         return self.num_samples
@@ -278,16 +303,24 @@ def get_2d_box_yolo(img, net):
                              class_IDs[0], class_names=net.classes)
     plt.show()
     '''
+    # 选出检测到的物体
     class_IDs, scores, bounding_boxs = class_IDs.asnumpy(), scores.asnumpy(), bounding_boxs.asnumpy()
     class_id_index = np.where(class_IDs > -1)
     class_IDs = class_IDs[class_id_index]
     scores = scores[class_id_index]
     bounding_boxs = bounding_boxs[:, :len(class_IDs), :].squeeze(0)
 
+    # 去掉车、人、自行车以外的物体
+    class_id_index = [i for i, e in enumerate(class_IDs) if e in [6, 14, 1]]
+    class_IDs = class_IDs[class_id_index]
+    scores = scores[class_id_index]
+    bounding_boxs = bounding_boxs[class_id_index, :]
+
     return class_IDs, scores, bounding_boxs
 
 def extract_data(dataset, net):
     type_whitelist = [6, 14, 1] # 6:car 14: person 1:bicycle
+    id_list = []
     box2d_list = [] # [xmin,ymin,xmax,ymax]
     type_list = []
     prob_list = []
@@ -326,6 +359,8 @@ def extract_data(dataset, net):
         box2d_center_rect = calib.project_image_to_rect(uvdepth)
         frustum_angle = -1 * np.arctan2(box2d_center_rect[0, 2],
                                         box2d_center_rect[0, 0])
+
+        id_list.append(obj_idx)
         box2d_list.append(np.array([xmin,ymin,xmax,ymax]))
         input_list.append(pc_in_box_fov)
         type_list.append(det_type_list[obj_idx])
@@ -333,6 +368,7 @@ def extract_data(dataset, net):
         frustum_angle_list.append(frustum_angle)
 
     data = {}
+    data['id_list'] = id_list
     data['box2d'] = box2d_list
     data['pc_in_box'] = input_list
     data['type'] = type_list
@@ -364,6 +400,7 @@ class frustum_data_infer():
         self.rotate_to_center = rotate_to_center
         self.one_hot = one_hot
 
+        self.id_list = data['id_list']
         self.box2d_list = data['box2d']
         self.input_list = data['pc_in_box']
         self.type_list = data['type']
@@ -378,7 +415,8 @@ class frustum_data_infer():
         # Compute one hot vector
         type2onehotclass = {'6': 0, '14': 1, '1': 2}
         if self.one_hot:
-            cls_type = str(self.type_list[index])
+            cls_type = str(int(self.type_list[index]))
+            print('cls_type: ', cls_type)
             assert (cls_type in ['6', '14', '1'])
             one_hot_vec = np.zeros((3))
             one_hot_vec[type2onehotclass[cls_type]] = 1
@@ -413,19 +451,17 @@ class frustum_data_infer():
         return rotate_pc_along_y(point_set, \
             self.get_center_view_rot_angle(index))
 
-
-
-
-
 def demo():
     #if 'mlab' not in sys.modules: import mayavi.mlab as mlab
-    #dataset = kitti_object_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync')
+    dataset = kitti_object_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync')
     #calibs = calib_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync/2011_09_26_calib/2011_09_26')
-    dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
+    #dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
     net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
     #fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
-    for i in range(2) :    #range(len(dataset)):
+    for i in range(1) :    #range(len(dataset)):
         data = extract_data(dataset, net)
+        TEST_DATASET = frustum_data_infer(data, 1024, rotate_to_center=True, one_hot=True)
+        test_from_rgb_detection(TEST_DATASET, FLAGS.output+'.pickle', FLAGS.output)
         '''
         img, _ = dataset.get_image(i)
         print('img: ', img.shape)
@@ -437,7 +473,7 @@ def demo():
         class_IDs, scores, bounding_boxs = get_2d_box_yolo(img, net)
         print('shape: ', class_IDs.shape, scores.shape, bounding_boxs.shape)
         '''
-        print(data)
+        #print(data)
 
 if __name__ == '__main__':
     print('start')
