@@ -318,7 +318,7 @@ def get_2d_box_yolo(img, net):
 
     return class_IDs, scores, bounding_boxs
 
-def extract_data(dataset, net):
+def extract_data(dataset, net, data_idx):
     type_whitelist = [6, 14, 1] # 6:car 14: person 1:bicycle
     id_list = []
     box2d_list = [] # [xmin,ymin,xmax,ymax]
@@ -327,7 +327,6 @@ def extract_data(dataset, net):
     input_list = []  # channel number = 4, xyz,intensity in rect camera coord
     frustum_angle_list = []
 
-    data_idx = 0
     img, _ = dataset.get_image(data_idx)
     calib = dataset.get_calibration()
     pc_velo = dataset.get_lidar(data_idx)
@@ -458,8 +457,8 @@ def demo():
     #dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
     net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
     #fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
-    for i in range(1) :    #range(len(dataset)):
-        data = extract_data(dataset, net)
+    for i in range(50) :    #range(len(dataset)):
+        data = extract_data(dataset, net, i)
         TEST_DATASET = frustum_data_infer(data, 1024, rotate_to_center=True, one_hot=True)
         test_from_rgb_detection(TEST_DATASET, FLAGS.output+'.pickle', FLAGS.output)
         '''
