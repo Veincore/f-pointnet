@@ -202,7 +202,7 @@ class calib_infer():
 class kitti_object_infer():
     def __init__(self, root_dir):
         self.root_dir = root_dir
-        self.num_samples = 108
+        self.num_samples = 109
 
         self.image_dir = os.path.join(self.root_dir, 'image_02/data')
         self.lidar_dir = os.path.join(self.root_dir, 'velodyne_points/data')
@@ -247,7 +247,7 @@ def show_lidar(pc_velo, calib, fig, img_fov=False, img_width=None, img_height=No
     ''' Show all LiDAR points.
         Draw 3d box in LiDAR point cloud (in velo coord system) '''
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
-    from viz_util import draw_lidar_simple, draw_lidar, draw_gt_boxes3d
+    from viz_util import draw_lidar
 
     #mlab.clf(fig)
     print(('All point num: ', pc_velo.shape[0]))
@@ -451,16 +451,30 @@ class frustum_data_infer():
             self.get_center_view_rot_angle(index))
 
 def demo():
-    #if 'mlab' not in sys.modules: import mayavi.mlab as mlab
+    if 'mlab' not in sys.modules: import mayavi.mlab as mlab
+    from viz_util import draw_gt_boxes3d
+
     dataset = kitti_object_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync')
+    calibs = dataset.get_calibration()
     #calibs = calib_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync/2011_09_26_calib/2011_09_26')
     #dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
     net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
-    #fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
-    for i in range(50) :    #range(len(dataset)):
+    fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
+    for i in range(len(dataset)) :    # range(len(dataset)):
         data = extract_data(dataset, net, i)
         TEST_DATASET = frustum_data_infer(data, 1024, rotate_to_center=True, one_hot=True)
-        test_from_rgb_detection(TEST_DATASET, FLAGS.output+'.pickle', FLAGS.output)
+        box_3d_list = test_from_rgb_detection(TEST_DATASET, FLAGS.output+'.pickle', FLAGS.output)
+        mlab.clf(fig)
+        img, _ = dataset.get_image(i)
+        pc = dataset.get_lidar(i)[:, 0:3]
+        cv2.imshow('0', img)
+        show_lidar(pc, calibs, fig, img_fov=True, img_width=img.shape[1], img_height=img.shape[0])
+
+        box3d_pts_3d_velo_list = []
+        for box_3d in box_3d_list:
+            box3d_pts_3d_velo = calibs.project_rect_to_velo(box_3d)
+            box3d_pts_3d_velo_list.append(box3d_pts_3d_velo)
+        draw_gt_boxes3d(box3d_pts_3d_velo_list, fig)
         '''
         img, _ = dataset.get_image(i)
         print('img: ', img.shape)
@@ -472,7 +486,9 @@ def demo():
         class_IDs, scores, bounding_boxs = get_2d_box_yolo(img, net)
         print('shape: ', class_IDs.shape, scores.shape, bounding_boxs.shape)
         '''
-        #print(data)
+        #print('boxes: ', box_3d_list)
+        input()
+    input()
 
 if __name__ == '__main__':
     print('start')

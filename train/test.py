@@ -162,6 +162,7 @@ def write_detection_results(result_dir, id_list, type_list, box2d_list, center_l
     ''' Write frustum pointnets results to KITTI format label files. '''
     if result_dir is None: return
     results = {} # map from idx to list of strings, each string is a line (without \n)
+    box3d_list = []
     for i in range(len(center_list)):
         idx = id_list[i]
         # output_str = type_list[i] + " -1 -1 -10 "
@@ -176,6 +177,13 @@ def write_detection_results(result_dir, id_list, type_list, box2d_list, center_l
         if idx not in results: results[idx] = []
         results[idx].append(output_str)
 
+        # compute 3D boxs and draw
+        box_size = [l, w, h]
+        heading_angle = ry
+        center = [tx, ty, tz]
+        box_3d = provider.get_3d_box(box_size, heading_angle, center)
+        box3d_list.append(box_3d)
+
     # Write TXT files
     if not os.path.exists(result_dir): os.mkdir(result_dir)
     output_dir = os.path.join(result_dir, 'data')
@@ -185,7 +193,8 @@ def write_detection_results(result_dir, id_list, type_list, box2d_list, center_l
         fout = open(pred_filename, 'w')
         for line in results[idx]:
             fout.write(line+'\n')
-        fout.close() 
+        fout.close()
+    return box3d_list
 
 def fill_files(output_dir, to_fill_filename_list):
     ''' Create empty files if not exist for the filelist. '''
@@ -248,7 +257,7 @@ def test_from_rgb_detection(TEST_DATASET, output_filename, result_dir=None):
             size_cls_list.append(batch_sclass_pred[i])
             size_res_list.append(batch_sres_pred[i,:])
             rot_angle_list.append(batch_rot_angle[i])
-            #score_list.append(batch_scores[i])
+            # score_list.append(batch_scores[i])
             score_list.append(batch_rgb_prob[i]) # 2D RGB detection score
             onehot_list.append(batch_one_hot_vec[i])
 
@@ -267,7 +276,7 @@ def test_from_rgb_detection(TEST_DATASET, output_filename, result_dir=None):
 
     # Write detection results for KITTI evaluation
     print('Number of point clouds: %d' % (len(ps_list)))
-    write_detection_results(result_dir, TEST_DATASET.id_list,
+    box_3d_list = write_detection_results(result_dir, TEST_DATASET.id_list,
         TEST_DATASET.type_list, TEST_DATASET.box2d_list,
         center_list, heading_cls_list, heading_res_list,
         size_cls_list, size_res_list, rot_angle_list, score_list)
@@ -278,6 +287,8 @@ def test_from_rgb_detection(TEST_DATASET, output_filename, result_dir=None):
         to_fill_filename_list = [line.rstrip()+'.txt' \
             for line in open(FLAGS.idx_path)]
         fill_files(output_dir, to_fill_filename_list)
+
+    return box_3d_list
 
 #def test(output_filename, result_dir=None):
 def test(TEST_DATASET, output_filename, result_dir=None):
