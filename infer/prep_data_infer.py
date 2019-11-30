@@ -7,7 +7,7 @@ sys.path.append(ROOT_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'mayavi'))
 #sys.path.append(os.path.join(ROOT_DIR, 'train'))
 
-if(os.path.exists('/opt/ros/kinetic/lib/python2.7/dist-packages/')):
+if os.path.exists('/opt/ros/kinetic/lib/python2.7/dist-packages/'):
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
 import argparse
@@ -276,8 +276,24 @@ def show_lidar_on_image(pc_velo, img, calib, img_width, img_height):
             int(np.round(imgfov_pts_2d[i,1]))),
             2, color=tuple(color), thickness=-1)
     #Image.fromarray(img).show()
-    cv2.imshow('0', img)
+    cv2.imshow('lidar on image', img)
     return img
+
+def transform_bbox_inverse(bbox_lists, img_ori_shape, img_shape):
+    # 将yolo得出的bbox映射回原图像
+    # img_shape: (w, h, c) , inputs of YOLO
+    # img_ori_shape: (w, h, c), origin image shape
+    w_ori, h_ori, _ = img_ori_shape
+    w, h, _ = img_shape
+    scale_w = w_ori / w
+    scale_h = h_ori / h
+    bbox_lists[:, 0] *= scale_w
+    bbox_lists[:, 2] *= scale_w
+    bbox_lists[:, 1] *= scale_h
+    bbox_lists[:, 3] *= scale_h
+
+    bbox_lists = bbox_lists.astype(int)
+    return bbox_lists
 
 def get_2d_box_yolo(img, net):
     '''
@@ -295,6 +311,7 @@ def get_2d_box_yolo(img, net):
             bounding_boxes: [batch, 100, 4], [xmin, ymin, xmax, ymax]
     '''
     #net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
+    img_ori = img
     img = mx.nd.array(img[:, :, ::-1])
     x, img = gluoncv.data.transforms.presets.yolo.transform_test(img, short = 512)
     class_IDs, scores, bounding_boxs = net(x)
@@ -315,6 +332,7 @@ def get_2d_box_yolo(img, net):
     class_IDs = class_IDs[class_id_index]
     scores = scores[class_id_index]
     bounding_boxs = bounding_boxs[class_id_index, :]
+    bounding_boxs = transform_bbox_inverse(bounding_boxs, img_ori.shape, img.shape)
 
     return class_IDs, scores, bounding_boxs
 
@@ -336,6 +354,7 @@ def extract_data(dataset, net, data_idx):
     pc_rect[:, 3] = pc_velo[:, 3]
     img_height, img_width, img_channel = img.shape
     det_type_list, det_prob_list, det_box2d_list = get_2d_box_yolo(img, net)
+    show_image_with_2d_boxes(img, det_box2d_list)
     _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov( \
         pc_velo[:, 0:3], calib, 0, 0, img_width, img_height, True)
 
@@ -350,6 +369,9 @@ def extract_data(dataset, net, data_idx):
                        (pc_image_coord[:, 1] >= ymin)
         box_fov_inds = box_fov_inds & img_fov_inds
         pc_in_box_fov = pc_rect[box_fov_inds, :]
+        #print('pc_in_fov: ', pc_in_box_fov.shape[0])
+        if pc_in_box_fov.shape[0] == 0:
+            continue
         # get frustum angle
         box2d_center = np.array([(xmin + xmax) / 2.0, (ymin + ymax) / 2.0])
         uvdepth = np.zeros((1, 3))
@@ -427,8 +449,9 @@ class frustum_data_infer():
             point_set = self.input_list[index]
 
             # Resample
-        choice = np.random.choice(point_set.shape[0], self.npoints, replace=True)
-        point_set = point_set[choice, :]
+        if point_set.shape[0] > 0:
+            choice = np.random.choice(point_set.shape[0], self.npoints, replace=True)
+            point_set = point_set[choice, :]
 
         if self.one_hot:
             return point_set, rot_angle, self.prob_list[index], one_hot_vec
@@ -450,6 +473,12 @@ class frustum_data_infer():
         return rotate_pc_along_y(point_set, \
             self.get_center_view_rot_angle(index))
 
+def show_image_with_2d_boxes(img, box_list):
+    for box in box_list:
+        cv2.rectangle(img, (int(box[0]),int(box[1])),
+            (int(box[2]),int(box[3])), (0,255,0), 2)
+    cv2.imshow('0', img)
+
 def demo():
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
     from viz_util import draw_gt_boxes3d
@@ -467,7 +496,6 @@ def demo():
         mlab.clf(fig)
         img, _ = dataset.get_image(i)
         pc = dataset.get_lidar(i)[:, 0:3]
-        cv2.imshow('0', img)
         show_lidar(pc, calibs, fig, img_fov=True, img_width=img.shape[1], img_height=img.shape[0])
 
         box3d_pts_3d_velo_list = []
@@ -486,7 +514,6 @@ def demo():
         class_IDs, scores, bounding_boxs = get_2d_box_yolo(img, net)
         print('shape: ', class_IDs.shape, scores.shape, bounding_boxs.shape)
         '''
-        #print('boxes: ', box_3d_list)
         input()
     input()
 

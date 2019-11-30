@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e092bc12-b596-43a8-a7f5-eb3852703697" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/infer/prep_data_infer.py" beforeDir="false" afterPath="$PROJECT_DIR$/infer/prep_data_infer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mayavi/viz_util.py" beforeDir="false" afterPath="$PROJECT_DIR$/mayavi/viz_util.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infer/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/infer/test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000000.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000000.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000001.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000001.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000002.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000002.txt" afterDir="false" />
@@ -33,88 +32,14 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="test.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/train/test.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="349">
-              <caret line="167" column="51" lean-forward="true" selection-start-line="167" selection-start-column="51" selection-end-line="167" selection-end-column="51" />
-              <folding>
-                <element signature="e#179#216#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="viz_util.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/mayavi/viz_util.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="219">
-              <caret line="107" column="24" selection-start-line="107" selection-start-column="24" selection-end-line="107" selection-end-column="24" />
-              <folding>
-                <element signature="e#223#241#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="prepare_data.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kitti/prepare_data.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="475">
-              <caret line="230" column="58" selection-start-line="230" selection-start-column="58" selection-end-line="230" selection-end-column="58" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="kitti_util.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kitti/kitti_util.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="169">
-              <caret line="269" column="4" selection-start-line="269" selection-start-column="4" selection-end-line="269" selection-end-column="4" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="kitti_object.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/kitti/kitti_object.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-11">
-              <caret line="170" column="68" lean-forward="true" selection-start-line="170" selection-start-column="68" selection-end-line="170" selection-end-column="68" />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="prep_data_infer.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/infer/prep_data_infer.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="223">
-              <caret line="472" column="35" lean-forward="true" selection-start-line="472" selection-start-column="35" selection-end-line="472" selection-end-column="35" />
+            <state relative-caret-position="475">
+              <caret line="373" column="20" lean-forward="true" selection-start-line="373" selection-start-column="20" selection-end-line="373" selection-end-column="20" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="000000.txt" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/train/detection_results_v2/data/000000.txt">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="18">
-              <caret line="1" selection-start-line="1" selection-end-line="1" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="000008.txt" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/train/detection_results_v2/data/000008.txt">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file leaf-file-name="provider.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/train/provider.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-153">
-              <caret line="268" selection-start-line="268" selection-end-line="268" />
             </state>
           </provider>
         </entry>
@@ -192,8 +117,8 @@
     <packageJsonPaths />
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="516" />
-    <option name="y" value="159" />
+    <option name="x" value="420" />
+    <option name="y" value="80" />
     <option name="width" value="1469" />
     <option name="height" value="919" />
   </component>
@@ -214,28 +139,7 @@
             <path>
               <item name="frustum-pointnets" type="b2602c69:ProjectViewProjectNode" />
               <item name="frustum-pointnets" type="462c0819:PsiDirectoryNode" />
-              <item name="kitti" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="frustum-pointnets" type="b2602c69:ProjectViewProjectNode" />
-              <item name="frustum-pointnets" type="462c0819:PsiDirectoryNode" />
-              <item name="models" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="frustum-pointnets" type="b2602c69:ProjectViewProjectNode" />
-              <item name="frustum-pointnets" type="462c0819:PsiDirectoryNode" />
-              <item name="scripts" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="frustum-pointnets" type="b2602c69:ProjectViewProjectNode" />
-              <item name="frustum-pointnets" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="frustum-pointnets" type="b2602c69:ProjectViewProjectNode" />
-              <item name="frustum-pointnets" type="462c0819:PsiDirectoryNode" />
-              <item name="train" type="462c0819:PsiDirectoryNode" />
-              <item name="detection_results_v2" type="462c0819:PsiDirectoryNode" />
+              <item name="infer" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -336,7 +240,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="516" y="159" width="1469" height="919" extended-state="0" />
+    <frame x="420" y="80" width="1469" height="919" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -653,12 +557,29 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/train/detection_results_v2/data/000000.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="18">
+          <caret line="1" selection-start-line="1" selection-end-line="1" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/mayavi/viz_util.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="219">
-          <caret line="107" column="24" selection-start-line="107" selection-start-column="24" selection-end-line="107" selection-end-column="24" />
+        <state relative-caret-position="1303">
+          <caret line="111" column="31" selection-start-line="111" selection-start-column="31" selection-end-line="111" selection-end-column="31" />
           <folding>
             <element signature="e#223#241#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/train/test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="349">
+          <caret line="167" column="51" lean-forward="true" selection-start-line="167" selection-start-column="51" selection-end-line="167" selection-end-column="51" />
+          <folding>
+            <element signature="e#179#216#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -677,34 +598,17 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/train/detection_results_v2/data/000000.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="18">
-          <caret line="1" selection-start-line="1" selection-end-line="1" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/kitti/kitti_object.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-11">
-          <caret line="170" column="68" lean-forward="true" selection-start-line="170" selection-start-column="68" selection-end-line="170" selection-end-column="68" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train/test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="349">
-          <caret line="167" column="51" lean-forward="true" selection-start-line="167" selection-start-column="51" selection-end-line="167" selection-end-column="51" />
-          <folding>
-            <element signature="e#179#216#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="277">
+          <caret line="132" column="33" selection-start-line="132" selection-start-column="33" selection-end-line="132" selection-end-column="33" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/infer/prep_data_infer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="223">
-          <caret line="472" column="35" lean-forward="true" selection-start-line="472" selection-start-column="35" selection-end-line="472" selection-end-column="35" />
+        <state relative-caret-position="475">
+          <caret line="373" column="20" lean-forward="true" selection-start-line="373" selection-start-column="20" selection-end-line="373" selection-end-column="20" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
