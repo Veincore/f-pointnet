@@ -18,7 +18,7 @@ import importlib
 import matplotlib.pyplot as plt
 import gluoncv
 import kitti.kitti_util as utils
-from train.test import test_from_rgb_detection
+from train.test import test_from_rgb_detection, get_session_and_ops
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=int, default=0, help='GPU to use [default: GPU 0]')
@@ -257,7 +257,7 @@ def show_lidar(pc_velo, calib, fig, img_fov=False, img_width=None, img_height=No
             img_width, img_height)
         print(('FOV point num: ', pc_velo.shape[0]))
     draw_lidar(pc_velo, fig=fig)
-    mlab.show(1)
+    mlab.show(30)
 
 def show_lidar_on_image(pc_velo, img, calib, img_width, img_height):
     ''' Project LiDAR points to image '''
@@ -277,6 +277,7 @@ def show_lidar_on_image(pc_velo, img, calib, img_width, img_height):
             2, color=tuple(color), thickness=-1)
     #Image.fromarray(img).show()
     cv2.imshow('lidar on image', img)
+    cv2.waitKey(30)
     return img
 
 def transform_bbox_inverse(bbox_lists, img_ori_shape, img_shape):
@@ -437,7 +438,7 @@ class frustum_data_infer():
         type2onehotclass = {'6': 0, '14': 1, '1': 2}
         if self.one_hot:
             cls_type = str(int(self.type_list[index]))
-            print('cls_type: ', cls_type)
+            # print('cls_type: ', cls_type)
             assert (cls_type in ['6', '14', '1'])
             one_hot_vec = np.zeros((3))
             one_hot_vec[type2onehotclass[cls_type]] = 1
@@ -477,9 +478,11 @@ def show_image_with_2d_boxes(img, box_list):
     for box in box_list:
         cv2.rectangle(img, (int(box[0]),int(box[1])),
             (int(box[2]),int(box[3])), (0,255,0), 2)
-    cv2.imshow('0', img)
+    cv2.imshow('img_with_box', img)
+    cv2.waitKey(30)
 
 def demo():
+    import time
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
     from viz_util import draw_gt_boxes3d
 
@@ -488,11 +491,15 @@ def demo():
     #calibs = calib_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync/2011_09_26_calib/2011_09_26')
     #dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
     net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
+    sess, ops = get_session_and_ops(batch_size=BATCH_SIZE, num_point=NUM_POINT)
     fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
-    for i in range(len(dataset)) :    # range(len(dataset)):
+    for i in range(len(dataset)) :
+        time1 = time.time()
         data = extract_data(dataset, net, i)
         TEST_DATASET = frustum_data_infer(data, 1024, rotate_to_center=True, one_hot=True)
-        box_3d_list = test_from_rgb_detection(TEST_DATASET, FLAGS.output+'.pickle', FLAGS.output)
+        box_3d_list = test_from_rgb_detection(TEST_DATASET, sess, ops, FLAGS.output+'.pickle', FLAGS.output)
+        time2 = time.time()
+        print('time: ', time2 - time1)
         mlab.clf(fig)
         img, _ = dataset.get_image(i)
         pc = dataset.get_lidar(i)[:, 0:3]
@@ -514,7 +521,8 @@ def demo():
         class_IDs, scores, bounding_boxs = get_2d_box_yolo(img, net)
         print('shape: ', class_IDs.shape, scores.shape, bounding_boxs.shape)
         '''
-        input()
+        if i % 10 == 0:
+            input()
     input()
 
 if __name__ == '__main__':

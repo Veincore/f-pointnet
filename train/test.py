@@ -204,8 +204,9 @@ def fill_files(output_dir, to_fill_filename_list):
             fout = open(filepath, 'w')
             fout.close()
 
-#def test_from_rgb_detection(output_filename, result_dir=None):
-def test_from_rgb_detection(TEST_DATASET, output_filename, result_dir=None):
+# def test_from_rgb_detection(output_filename, result_dir=None):
+# def test_from_rgb_detection(TEST_DATASET, output_filename, result_dir=None):
+def test_from_rgb_detection(TEST_DATASET, sess, ops, output_filename, result_dir=None):
     ''' Test frustum pointents with 2D boxes from a RGB detector.
     Write test results to KITTI format label files.
     todo (rqi): support variable number of points.
@@ -228,9 +229,9 @@ def test_from_rgb_detection(TEST_DATASET, output_filename, result_dir=None):
     
     batch_data_to_feed = np.zeros((batch_size, NUM_POINT, NUM_CHANNEL))
     batch_one_hot_to_feed = np.zeros((batch_size, 3))
-    sess, ops = get_session_and_ops(batch_size=batch_size, num_point=NUM_POINT)
+    # sess, ops = get_session_and_ops(batch_size=batch_size, num_point=NUM_POINT)
     for batch_idx in range(num_batches):
-        print('batch idx: %d' % (batch_idx))
+        # print('batch idx: %d' % (batch_idx))
         start_idx = batch_idx * batch_size
         end_idx = min(len(TEST_DATASET), (batch_idx+1) * batch_size)
         cur_batch_size = end_idx - start_idx
