@@ -2,19 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e092bc12-b596-43a8-a7f5-eb3852703697" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/infer/prep_data_infer.py" beforeDir="false" afterPath="$PROJECT_DIR$/infer/prep_data_infer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000000.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000000.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000001.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000001.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000002.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000002.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000003.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000003.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000004.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000004.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000005.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000005.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000006.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000006.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000007.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000007.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000008.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000008.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000009.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000009.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/detection_results_v2/data/000010.txt" beforeDir="false" afterPath="$PROJECT_DIR$/train/detection_results_v2/data/000010.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/train/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infer/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/infer/test.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -25,7 +13,7 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/frustum_pointnets_master$test.coverage" NAME="test Coverage Results" MODIFIED="1572423291569" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/frustum_pointnets$test.coverage" NAME="test Coverage Results" MODIFIED="1573906203186" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/frustum_pointnets$test.coverage" NAME="test Coverage Results" MODIFIED="1575276538210" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/frustum_pointnets$test__1_.coverage" NAME="test (1) Coverage Results" MODIFIED="1573458561042" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/infer" />
     <SUITE FILE_PATH="coverage/frustum_pointnets$prep_data_infer.coverage" NAME="prep_data_infer Coverage Results" MODIFIED="1573906753356" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/infer" />
     <SUITE FILE_PATH="coverage/frustum_pointnets$fp.coverage" NAME="fp Coverage Results" MODIFIED="1573457942145" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
@@ -33,23 +21,23 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="test.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/train/test.py">
+      <file leaf-file-name="test.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/infer/test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="402">
-              <caret line="223" lean-forward="true" selection-start-line="223" selection-end-line="223" />
+            <state relative-caret-position="306">
+              <caret line="47" column="58" selection-start-line="47" selection-start-column="58" selection-end-line="47" selection-end-column="58" />
               <folding>
-                <element signature="e#179#216#0" expanded="true" />
+                <element signature="e#0#42#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="prep_data_infer.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="prep_data_infer.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/infer/prep_data_infer.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="180">
-              <caret line="499" column="88" selection-start-line="499" selection-start-column="88" selection-end-line="499" selection-end-column="88" />
+            <state relative-caret-position="-624">
+              <caret line="298" column="4" selection-start-line="298" selection-start-column="4" selection-end-line="298" selection-end-column="4" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -110,13 +98,13 @@
         <option value="$PROJECT_DIR$/test.txt" />
         <option value="$PROJECT_DIR$/ttttt.py" />
         <option value="$PROJECT_DIR$/kitti/kitti_object.py" />
-        <option value="$PROJECT_DIR$/infer/test.py" />
         <option value="$PROJECT_DIR$/train/provider.py" />
         <option value="$PROJECT_DIR$/scripts/command_infer.sh" />
         <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/mayavi/viz_util.py" />
         <option value="$PROJECT_DIR$/train/test.py" />
         <option value="$PROJECT_DIR$/infer/prep_data_infer.py" />
+        <option value="$PROJECT_DIR$/infer/test.py" />
       </list>
     </option>
   </component>
@@ -129,9 +117,9 @@
   <component name="NodePackageJsonFileManager">
     <packageJsonPaths />
   </component>
-  <component name="ProjectFrameBounds" extendedState="1">
-    <option name="x" value="344" />
-    <option name="y" value="81" />
+  <component name="ProjectFrameBounds">
+    <option name="x" value="568" />
+    <option name="y" value="103" />
     <option name="width" value="1469" />
     <option name="height" value="919" />
   </component>
@@ -149,6 +137,11 @@
               <item name="frustum-pointnets" type="b2602c69:ProjectViewProjectNode" />
               <item name="frustum-pointnets" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="frustum-pointnets" type="b2602c69:ProjectViewProjectNode" />
+              <item name="frustum-pointnets" type="462c0819:PsiDirectoryNode" />
+              <item name="infer" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
@@ -165,7 +158,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/infer" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -184,7 +177,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.prep_data_infer">
+  <component name="RunManager" selected="Python.test">
     <configuration name="prep_data_infer" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="frustum-pointnets-master" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -229,8 +222,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.prep_data_infer" />
         <item itemvalue="Python.test" />
+        <item itemvalue="Python.prep_data_infer" />
       </list>
     </recent_temporary>
   </component>
@@ -248,17 +241,18 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="344" y="81" width="1469" height="919" extended-state="1" />
+    <frame x="528" y="92" width="1469" height="919" extended-state="0" />
+    <editor active="true" />
     <layout>
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.50068307" side_tool="true" weight="0.22335601" />
       <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="File Transfer" order="8" sideWeight="0.49931693" visible="true" weight="0.3077874" />
+      <window_info anchor="bottom" id="File Transfer" order="8" sideWeight="0.49931693" weight="0.3077874" />
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Python Console" order="7" weight="0.22409639" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49931693" weight="0.2435105" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49931693" visible="true" weight="0.2435105" />
       <window_info anchor="bottom" id="Terminal" order="7" />
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.15691672" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.15691672" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="right" id="Database" order="3" />
       <window_info anchor="right" id="SciView" order="3" weight="0.26290435" />
@@ -492,13 +486,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/ttttt.py" />
-    <entry file="file://$PROJECT_DIR$/infer/test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="558">
-          <caret line="41" column="4" selection-start-line="41" selection-start-column="4" selection-end-line="41" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/scripts/command_test_v2.sh">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -614,10 +601,20 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/infer/prep_data_infer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="499" column="88" selection-start-line="499" selection-start-column="88" selection-end-line="499" selection-end-column="88" />
+        <state relative-caret-position="-624">
+          <caret line="298" column="4" selection-start-line="298" selection-start-column="4" selection-end-line="298" selection-end-column="4" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/infer/test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="47" column="58" selection-start-line="47" selection-start-column="58" selection-end-line="47" selection-end-column="58" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
           </folding>
         </state>
       </provider>

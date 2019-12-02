@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import cv2
 import mxnet as mx
+import time
 
 def show_image_with_2d_boxes(img, box_list):
     for box in box_list:
@@ -25,7 +26,7 @@ def transform_bbox_inverse(bbox_lists, img_ori_shape, img_shape):
     bbox_lists = bbox_lists.astype(int)
     return bbox_lists
 
-net = model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
+net = model_zoo.get_model('yolo3_darknet53_voc', pretrained=True, ctx=mx.gpu(0))
 
 im_fname = utils.download('https://raw.githubusercontent.com/zhreshold/' +
                           'mxnet-ssd/master/data/demo/dog.jpg',
@@ -34,10 +35,7 @@ img_ori = cv2.imread('dog.jpg')
 img = img_ori
 img = mx.nd.array(img[:, :, ::-1])
 x, img = data.transforms.presets.yolo.transform_test(img, short = 512)
-'''
-im_fname = 'D:\\Detectron_Data\\2011_09_26_drive_0001_sync\\image_02\\data\\0000000080.png'
-x, img = data.transforms.presets.yolo.load_test(im_fname, short = 512)
-'''
+# x, img = data.transforms.presets.yolo.load_test(im_fname, short = 512)
 print('Shape of pre-processed image:', x.shape)
 
 '''
@@ -47,8 +45,32 @@ aeroplane bicycle bird boat bottle bus car cat chair cow diningtable
  11   12      13       14       15       16    17   18      19
  dog horse motorbike person pottedplant sheep sofa train tvmonitor 
 '''
-class_IDs, scores, bounding_boxs = net(x)
+class_IDs, scores, bounding_boxs = net(x.as_in_context(mx.gpu(0)))
+
+print('shape: ', class_IDs.shape)
+class_id_np = np.zeros(class_IDs.shape)
+
+# for i in range(class_IDs.shape[1]):
+#     class_id_np[0, i, 0] = class_IDs[0,i,0]
+
+time0 = time.time()
+class_IDs.wait_to_read()
+scores.wait_to_read()
+bounding_boxs.wait_to_read()
+time1 = time.time()
 class_IDs, scores, bounding_boxs = class_IDs.asnumpy(), scores.asnumpy(), bounding_boxs.asnumpy()
+time2 = time.time()
+
+
+
+print('shape_time: ', time1 - time0)
+print('time: ', time2 - time1)
+
+
+
+
+
+
 class_id_index = np.where(class_IDs > -1)
 class_IDs = class_IDs[class_id_index]
 scores = scores[class_id_index]
@@ -59,11 +81,11 @@ class_IDs = class_IDs[class_id_index]
 scores = scores[class_id_index]
 bounding_boxs = bounding_boxs[class_id_index, :]
 
-print(img_ori.shape)
-bounding_boxs = transform_bbox_inverse(bounding_boxs, img_ori.shape, img.shape)
-print(bounding_boxs)
-show_image_with_2d_boxes(img_ori, bounding_boxs)
-cv2.waitKey(0)
+# print(img_ori.shape)
+# bounding_boxs = transform_bbox_inverse(bounding_boxs, img_ori.shape, img.shape)
+# print(bounding_boxs)
+# show_image_with_2d_boxes(img_ori, bounding_boxs)
+# cv2.waitKey(0)
 '''
 print('class_id: ',     class_IDs)  # NDArray [batch, 100, 1]
 print('scores: ', scores)  # [batch, 100, 1]

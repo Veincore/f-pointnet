@@ -126,8 +126,9 @@ class FrustumDataset(object):
         self.rotate_to_center = rotate_to_center
         self.one_hot = one_hot
         if overwritten_data_path is None:
-            overwritten_data_path = os.path.join(ROOT_DIR,
-                'kitti/frustum_carpedcyc_%s.pickle'%(split))
+            # overwritten_data_path = os.path.join(ROOT_DIR,
+            #     'kitti/frustum_carpedcyc_%s.pickle'%(split))
+            overwritten_data_path = '/media/vdc/backup/database_backup/Chris/f-pointnet/kitti/frustum_carpedcyc_%s.pickle' % (split)
 
         self.from_rgb_detection = from_rgb_detection
         if from_rgb_detection:

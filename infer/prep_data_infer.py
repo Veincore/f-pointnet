@@ -11,6 +11,7 @@ if os.path.exists('/opt/ros/kinetic/lib/python2.7/dist-packages/'):
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
 import argparse
+import time
 import cv2
 import numpy as np
 import mxnet as mx
@@ -315,12 +316,8 @@ def get_2d_box_yolo(img, net):
     img_ori = img
     img = mx.nd.array(img[:, :, ::-1])
     x, img = gluoncv.data.transforms.presets.yolo.transform_test(img, short = 512)
-    class_IDs, scores, bounding_boxs = net(x)
-    '''
-    ax = gluoncv.utils.viz.plot_bbox(img, bounding_boxs[0], scores[0],
-                             class_IDs[0], class_names=net.classes)
-    plt.show()
-    '''
+    class_IDs, scores, bounding_boxs = net(x.as_in_context(mx.gpu(0)))
+
     # 选出检测到的物体
     class_IDs, scores, bounding_boxs = class_IDs.asnumpy(), scores.asnumpy(), bounding_boxs.asnumpy()
     class_id_index = np.where(class_IDs > -1)
@@ -334,6 +331,7 @@ def get_2d_box_yolo(img, net):
     scores = scores[class_id_index]
     bounding_boxs = bounding_boxs[class_id_index, :]
     bounding_boxs = transform_bbox_inverse(bounding_boxs, img_ori.shape, img.shape)
+
 
     return class_IDs, scores, bounding_boxs
 
@@ -354,8 +352,9 @@ def extract_data(dataset, net, data_idx):
 
     pc_rect[:, 3] = pc_velo[:, 3]
     img_height, img_width, img_channel = img.shape
-    det_type_list, det_prob_list, det_box2d_list = get_2d_box_yolo(img, net)
+    det_type_list, det_prob_list, det_box2d_list = get_2d_box_yolo(img, net)  # 0.8s
     show_image_with_2d_boxes(img, det_box2d_list)
+
     _, pc_image_coord, img_fov_inds = get_lidar_in_image_fov( \
         pc_velo[:, 0:3], calib, 0, 0, img_width, img_height, True)
 
@@ -482,7 +481,6 @@ def show_image_with_2d_boxes(img, box_list):
     cv2.waitKey(30)
 
 def demo():
-    import time
     if 'mlab' not in sys.modules: import mayavi.mlab as mlab
     from viz_util import draw_gt_boxes3d
 
@@ -490,16 +488,17 @@ def demo():
     calibs = dataset.get_calibration()
     #calibs = calib_infer('/media/vdc/backup/database_backup/Chris/f-pointnet/2011_09_26_drive_0001_sync/2011_09_26_calib/2011_09_26')
     #dataset = kitti_object_infer('D:\\Detectron_Data\\2011_09_26_drive_0001_sync')
-    net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True)
+    net = gluoncv.model_zoo.get_model('yolo3_darknet53_voc', pretrained=True, ctx=mx.gpu(0))
     sess, ops = get_session_and_ops(batch_size=BATCH_SIZE, num_point=NUM_POINT)
     fig = mlab.figure(figure=None, bgcolor=(0, 0, 0), fgcolor=None, engine=None, size=(1000, 500))
     for i in range(len(dataset)) :
         time1 = time.time()
-        data = extract_data(dataset, net, i)
-        TEST_DATASET = frustum_data_infer(data, 1024, rotate_to_center=True, one_hot=True)
-        box_3d_list = test_from_rgb_detection(TEST_DATASET, sess, ops, FLAGS.output+'.pickle', FLAGS.output)
+        data = extract_data(dataset, net, i)  # 0.9s
+        TEST_DATASET = frustum_data_infer(data, 1024, rotate_to_center=True, one_hot=True) # us级
+        box_3d_list = test_from_rgb_detection(TEST_DATASET, sess, ops, FLAGS.output+'.pickle', FLAGS.output) # 0.1s
         time2 = time.time()
         print('time: ', time2 - time1)
+
         mlab.clf(fig)
         img, _ = dataset.get_image(i)
         pc = dataset.get_lidar(i)[:, 0:3]
